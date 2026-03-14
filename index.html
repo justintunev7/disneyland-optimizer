@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🏰 Disneyland Day Optimizer</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface2: #0f3460;
+  --accent: #e94560;
+  --accent2: #533483;
+  --green: #00b894;
+  --yellow: #fdcb6e;
+  --orange: #e17055;
+  --red: #d63031;
+  --text: #f0f0f0;
+  --text2: #a0a0b0;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* Header */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--surface2);
+  display: flex; justify-content: space-between; align-items: center;
+  backdrop-filter: blur(10px);
+}
+.header-left h1 { font-size: 18px; }
+.header-left .subtitle { font-size: 12px; color: var(--text2); }
+.header-right { text-align: right; font-size: 12px; }
+.header-right .stat { color: var(--green); font-weight: bold; font-size: 14px; }
+
+/* Tabs */
+.tabs {
+  display: flex; background: var(--surface);
+  border-bottom: 2px solid var(--surface2);
+  position: sticky; top: 62px; z-index: 99;
+}
+.tab {
+  flex: 1; padding: 12px 8px; text-align: center;
+  font-size: 13px; font-weight: 600;
+  background: none; border: none; color: var(--text2);
+  cursor: pointer; border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Tab content */
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--surface2);
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.card-title { font-size: 16px; font-weight: 700; }
+.card-subtitle { font-size: 12px; color: var(--text2); }
+
+/* Wait time badges */
+.wait-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; min-width: 55px;
+}
+.wait-green { background: rgba(0,184,148,0.2); color: var(--green); }
+.wait-yellow { background: rgba(253,203,110,0.2); color: var(--yellow); }
+.wait-orange { background: rgba(225,112,85,0.2); color: var(--orange); }
+.wait-red { background: rgba(214,48,49,0.2); color: var(--red); }
+.wait-closed { background: rgba(160,160,176,0.15); color: var(--text2); }
+
+/* Recommendation cards */
+.rec-card {
+  background: linear-gradient(135deg, var(--surface2), var(--surface));
+  border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px;
+  border-left: 4px solid var(--accent);
+}
+.rec-card.top { border-left-color: var(--green); }
+.rec-number { font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+.rec-card.top .rec-number { color: var(--green); }
+.rec-ride { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.rec-reason { font-size: 13px; color: var(--text2); line-height: 1.4; }
+.rec-meta { display: flex; gap: 12px; margin-top: 8px; font-size: 12px; }
+.rec-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 600; border: none;
+  cursor: pointer; transition: all 0.2s;
+  min-height: 48px; /* big touch target */
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:active { background: #c23152; transform: scale(0.97); }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-secondary:active { background: #1a4a80; }
+.btn-success { background: var(--green); color: white; }
+.btn-success:active { background: #00a381; }
+.btn-small { padding: 8px 14px; font-size: 12px; min-height: 36px; }
+.btn-block { width: 100%; }
+
+/* Ride list items */
+.ride-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.ride-item:last-child { border-bottom: none; }
+.ride-check {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--text2); background: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 14px;
+  transition: all 0.2s;
+}
+.ride-check.done { background: var(--green); border-color: var(--green); }
+.ride-check.skipped { background: var(--text2); border-color: var(--text2); opacity: 0.5; }
+.ride-info { flex: 1; min-width: 0; }
+.ride-name { font-size: 15px; font-weight: 600; }
+.ride-name.done { text-decoration: line-through; opacity: 0.5; }
+.ride-detail { font-size: 12px; color: var(--text2); }
+.ride-wait { flex-shrink: 0; }
+.ride-tags { display: flex; gap: 4px; margin-top: 2px; }
+.tag {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px;
+  font-weight: 600;
+}
+.tag-ll { background: rgba(83,52,131,0.4); color: #b39ddb; }
+.tag-rs { background: rgba(233,69,96,0.3); color: #f48fb1; }
+.tag-tier1 { background: rgba(0,184,148,0.2); color: var(--green); }
+.tag-tier2 { background: rgba(253,203,110,0.2); color: var(--yellow); }
+.tag-tier3 { background: rgba(160,160,176,0.15); color: var(--text2); }
+
+/* LL Tracker */
+.ll-status {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px;
+  text-align: center;
+}
+.ll-timer { font-size: 28px; font-weight: 700; color: var(--accent); }
+.ll-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.ll-used-list { margin-top: 12px; }
+.ll-used-item {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13px;
+}
+
+/* Break mode */
+.break-banner {
+  background: linear-gradient(135deg, #533483, #0f3460);
+  padding: 20px; border-radius: var(--radius);
+  text-align: center; margin-bottom: 16px;
+}
+.break-banner h2 { font-size: 20px; margin-bottom: 8px; }
+.break-banner p { font-size: 13px; color: var(--text2); }
+
+/* Section headers */
+.section-title {
+  font-size: 13px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin: 20px 0 12px 0;
+}
+.section-title:first-child { margin-top: 0; }
+
+/* Refresh indicator */
+.refresh-bar {
+  font-size: 11px; color: var(--text2); text-align: center;
+  padding: 8px; background: var(--surface);
+}
+
+/* Action buttons bar */
+.action-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--surface2);
+  padding: 10px 16px;
+  display: flex; gap: 8px;
+  z-index: 100;
+}
+.action-bar .btn { flex: 1; font-size: 12px; padding: 10px 8px; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  justify-content: center; align-items: flex-end;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 16px 16px 0 0;
+  padding: 24px; width: 100%; max-width: 500px; max-height: 80vh;
+  overflow-y: auto;
+}
+.modal h3 { margin-bottom: 16px; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease; }
+
+/* Attribution */
+.attribution {
+  text-align: center; padding: 16px;
+  font-size: 11px; color: var(--text2);
+}
+.attribution a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🏰 Disneyland Optimizer</h1>
+    <div class="subtitle" id="clock">Mon, Mar 16 • --:-- AM</div>
+  </div>
+  <div class="header-right">
+    <div><span class="stat" id="done-count">0</span> / <span id="total-rides">0</span> rides</div>
+    <div id="ll-next-header" style="font-size:11px; color: var(--text2);">LL: Ready to book</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="recommend">🎯 Next</button>
+  <button class="tab" data-tab="waits">📊 Waits</button>
+  <button class="tab" data-tab="plan">✅ Plan</button>
+  <button class="tab" data-tab="ll">⚡ LL</button>
+</div>
+
+<div id="tab-recommend" class="tab-content active"></div>
+<div id="tab-waits" class="tab-content"></div>
+<div id="tab-plan" class="tab-content"></div>
+<div id="tab-ll" class="tab-content"></div>
+
+<div class="action-bar">
+  <button class="btn btn-success btn-small" onclick="markCurrentDone()">✓ Done</button>
+  <button class="btn btn-secondary btn-small" onclick="toggleBreak()">☕ Break</button>
+  <button class="btn btn-primary btn-small" onclick="refreshWaits()">🔄 Refresh</button>
+</div>
+
+<div class="modal-overlay" id="ride-modal">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// ==================== RIDE DATABASE ====================
+const RIDES = [
+  // Tier 1 — Must Do
+  {id: 292, name: "Space Mountain", land: "Tomorrowland", heightReq: 40, hasLL: true, tier: 1, riderSwitch: true, duration: 3, notes: "YOUR must-do ⭐"},
+  {id: 323, name: "Big Thunder Mountain", land: "Frontierland", heightReq: 40, hasLL: true, tier: 1, riderSwitch: true, duration: 4, notes: "Best at rope drop"},
+  {id: 298, name: "Pirates of the Caribbean", land: "New Orleans Square", heightReq: 0, hasLL: true, tier: 1, riderSwitch: false, duration: 15, notes: "All kids ride. Walk-on at night."},
+  {id: 324, name: "Haunted Mansion", land: "New Orleans Square", heightReq: 0, hasLL: true, tier: 1, riderSwitch: false, duration: 9, notes: "All kids ride"},
+  {id: 281, name: "Peter Pan's Flight", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 1, riderSwitch: false, duration: 3, notes: "⚠️ Do before 10:30 AM or skip!"},
+  {id: 289, name: "Buzz Lightyear Astro Blasters", land: "Tomorrowland", heightReq: 0, hasLL: true, tier: 1, riderSwitch: false, duration: 5, notes: "Interactive shooter, kids love it"},
+  {id: 307, name: "it's a small world", land: "Fantasyland", heightReq: 0, hasLL: true, tier: 1, riderSwitch: false, duration: 15, notes: "All ages. Good reset."},
+
+  // Tier 2 — With LLMP / If Time
+  {id: 279, name: "Matterhorn Bobsleds", land: "Fantasyland", heightReq: 42, hasLL: true, tier: 2, riderSwitch: true, duration: 4, notes: "Only if kids are 42\"+"},
+  {id: 14168, name: "Tiana's Bayou Adventure", land: "Bayou Country", heightReq: 40, hasLL: true, tier: 2, riderSwitch: true, duration: 10, notes: "Newer ride, longer waits"},
+  {id: 9498, name: "Millennium Falcon: Smugglers Run", land: "Galaxy's Edge", heightReq: 38, hasLL: true, tier: 2, riderSwitch: true, duration: 5, notes: "38\" = most 4yr olds qualify"},
+  {id: 291, name: "Star Tours", land: "Tomorrowland", heightReq: 40, hasLL: true, tier: 2, riderSwitch: true, duration: 5, notes: "Motion simulator"},
+  {id: 296, name: "Jungle Cruise", land: "Adventureland", heightReq: 0, hasLL: false, tier: 2, riderSwitch: false, duration: 8, notes: "🌙 Do at night — different experience!"},
+
+  // Tier 3 — Fill In
+  {id: 285, name: "Alice in Wonderland", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 4, notes: "Fun dark ride"},
+  {id: 280, name: "Mr. Toad's Wild Ride", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 2, notes: "Classic"},
+  {id: 301, name: "Roger Rabbit's Car Toon Spin", land: "Toontown", heightReq: 0, hasLL: true, tier: 3, riderSwitch: false, duration: 4, notes: ""},
+  {id: 290, name: "Astro Orbitor", land: "Tomorrowland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 2, notes: "Skip if > 20 min wait"},
+  {id: 275, name: "Dumbo the Flying Elephant", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 2, notes: "2-year-old favorite"},
+  {id: 277, name: "King Arthur Carrousel", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 3, notes: "Usually walk-on"},
+  {id: 305, name: "Storybook Land Canal Boats", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 10, notes: "Gentle, pretty"},
+  {id: 306, name: "Winnie the Pooh", land: "Bayou Country", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 4, notes: ""},
+  {id: 302, name: "Gadget's Go Coaster", land: "Toontown", heightReq: 35, hasLL: false, tier: 3, riderSwitch: false, duration: 1, notes: "Quick fun coaster"},
+  {id: 283, name: "Snow White's Enchanted Wish", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 3, notes: ""},
+  {id: 278, name: "Mad Tea Party", land: "Fantasyland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 2, notes: "Spinner"},
+  {id: 288, name: "Enchanted Tiki Room", land: "Adventureland", heightReq: 0, hasLL: false, tier: 3, riderSwitch: false, duration: 15, notes: "No wait. AC. Great rest spot."},
+  {id: 12428, name: "Mickey & Minnie's Runaway Railway", land: "Toontown", heightReq: 0, hasLL: true, tier: 3, riderSwitch: false, duration: 5, notes: "Great queue theming"},
+];
+
+// Proximity groups for "nearby" suggestions
+const LAND_PROXIMITY = {
+  "Adventureland": ["New Orleans Square", "Frontierland", "Bayou Country"],
+  "New Orleans Square": ["Adventureland", "Bayou Country", "Frontierland"],
+  "Frontierland": ["Adventureland", "New Orleans Square", "Fantasyland"],
+  "Bayou Country": ["New Orleans Square", "Adventureland", "Galaxy's Edge"],
+  "Fantasyland": ["Frontierland", "Toontown", "Tomorrowland"],
+  "Toontown": ["Fantasyland", "Tomorrowland"],
+  "Tomorrowland": ["Fantasyland", "Toontown", "Galaxy's Edge"],
+  "Galaxy's Edge": ["Tomorrowland", "Bayou Country", "Frontierland"],
+};
+
+// ==================== STATE ====================
+let state = {
+  rides: {}, // id -> {done: bool, skipped: bool, inLine: bool}
+  liveWaits: {}, // id -> {wait_time, is_open, last_updated}
+  llUsed: [], // [{rideId, rideName, time}]
+  llNextAvailable: null, // timestamp when next LL can be booked
+  llLastBooked: null,
+  onBreak: false,
+  currentLand: "Main Street U.S.A",
+  lastRefresh: null,
+};
+
+// Load state from localStorage
+function loadState() {
+  try {
+    const saved = localStorage.getItem('dl-optimizer-state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Only restore if same day
+      if (parsed._date === new Date().toDateString()) {
+        state = {...state, ...parsed};
+      }
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  state._date = new Date().toDateString();
+  localStorage.setItem('dl-optimizer-state', JSON.stringify(state));
+}
+
+// ==================== LIVE WAIT TIMES ====================
+async function fetchWaitTimes() {
+  try {
+    const res = await fetch('https://queue-times.com/parks/16/queue_times.json');
+    const data = await res.json();
+    const waits = {};
+    for (const land of data.lands) {
+      for (const ride of land.rides) {
+        waits[ride.id] = {
+          wait_time: ride.wait_time,
+          is_open: ride.is_open,
+          last_updated: ride.last_updated
+        };
+      }
+    }
+    state.liveWaits = waits;
+    state.lastRefresh = new Date().toISOString();
+    saveState();
+    renderAll();
+  } catch(e) {
+    console.error('Failed to fetch wait times:', e);
+  }
+}
+
+function getWait(rideId) {
+  const w = state.liveWaits[rideId];
+  if (!w) return {wait: null, open: false};
+  return {wait: w.wait_time, open: w.is_open};
+}
+
+function waitClass(mins) {
+  if (mins === null) return 'wait-closed';
+  if (mins <= 15) return 'wait-green';
+  if (mins <= 30) return 'wait-yellow';
+  if (mins <= 45) return 'wait-orange';
+  return 'wait-red';
+}
+
+function waitText(rideId) {
+  const {wait, open} = getWait(rideId);
+  if (!open) return '<span class="wait-badge wait-closed">Closed</span>';
+  if (wait === 0) return '<span class="wait-badge wait-green">Walk-on</span>';
+  return `<span class="wait-badge ${waitClass(wait)}">${wait} min</span>`;
+}
+
+// ==================== RECOMMENDATION ENGINE ====================
+function getRecommendations() {
+  const now = new Date();
+  const hour = now.getHours();
+  const available = RIDES.filter(r => {
+    const s = state.rides[r.id] || {};
+    return !s.done && !s.skipped;
+  });
+
+  // Score each ride
+  const scored = available.map(r => {
+    const {wait, open} = getWait(r.id);
+    let score = 0;
+    let reasons = [];
+
+    // Not open = skip
+    if (!open) return {ride: r, score: -1000, reasons: ["Currently closed"]};
+
+    // Tier bonus
+    if (r.tier === 1) { score += 50; reasons.push("⭐ Must-do ride"); }
+    else if (r.tier === 2) { score += 25; reasons.push("🎢 High priority"); }
+    else { score += 10; }
+
+    // Wait time scoring (lower = better)
+    if (wait !== null) {
+      if (wait <= 10) { score += 40; reasons.push(`🟢 Only ${wait} min wait!`); }
+      else if (wait <= 20) { score += 25; reasons.push(`🟡 ${wait} min — decent`); }
+      else if (wait <= 30) { score += 10; }
+      else if (wait <= 45) { score -= 10; reasons.push(`🟠 ${wait} min — consider LL`); }
+      else { score -= 25; reasons.push(`🔴 ${wait} min — long wait`); }
+    }
+
+    // Time-of-day bonuses
+    if (hour < 10 && r.name === "Peter Pan's Flight") {
+      score += 30; reasons.push("⏰ Do Peter Pan NOW before lines build");
+    }
+    if (hour >= 10 && r.name === "Peter Pan's Flight" && wait > 35) {
+      score -= 30; reasons.push("⚠️ Long wait — consider skipping");
+    }
+    if (hour >= 17 && r.name === "Jungle Cruise") {
+      score += 20; reasons.push("🌙 Night version is the best!");
+    }
+    if (hour >= 20 && r.name === "Pirates of the Caribbean") {
+      score += 15; reasons.push("🌙 Walk-on at night");
+    }
+    if (hour >= 15 && hour <= 17 && !r.riderSwitch && r.tier === 3) {
+      score += 10; reasons.push("☕ Good during afternoon peak");
+    }
+
+    // Proximity bonus
+    if (state.currentLand) {
+      const nearby = LAND_PROXIMITY[state.currentLand] || [];
+      if (r.land === state.currentLand) { score += 15; reasons.push("📍 You're right here"); }
+      else if (nearby.includes(r.land)) { score += 8; reasons.push("📍 Nearby"); }
+    }
+
+    // LL available bonus
+    if (r.hasLL && !state.llUsed.find(u => u.rideId === r.id)) {
+      const llAvail = !state.llNextAvailable || new Date() >= new Date(state.llNextAvailable);
+      if (llAvail && wait > 30) {
+        score += 20;
+        reasons.push("⚡ Use LLMP to skip the line!");
+      }
+    }
+
+    // Rider switch penalty when no break adults available (just a note)
+    if (r.riderSwitch) {
+      reasons.push("👶 Rider Switch needed");
+    }
+
+    return {ride: r, score, reasons};
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.filter(s => s.score > -500).slice(0, 5);
+}
+
+// ==================== RENDERING ====================
+function renderAll() {
+  renderRecommendations();
+  renderWaits();
+  renderPlan();
+  renderLL();
+  updateHeader();
+}
+
+function updateHeader() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'}) +
+    ' • ' + now.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'});
+
+  const doneCount = RIDES.filter(r => state.rides[r.id]?.done).length;
+  document.getElementById('done-count').textContent = doneCount;
+  document.getElementById('total-rides').textContent = RIDES.length;
+
+  const llEl = document.getElementById('ll-next-header');
+  if (state.llNextAvailable) {
+    const avail = new Date(state.llNextAvailable);
+    if (new Date() >= avail) {
+      llEl.textContent = "⚡ LL: Ready to book!";
+      llEl.style.color = "var(--green)";
+    } else {
+      llEl.textContent = `⚡ LL: Available at ${avail.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})}`;
+      llEl.style.color = "var(--yellow)";
+    }
+  } else {
+    llEl.textContent = "⚡ LL: Ready to book";
+    llEl.style.color = "var(--text2)";
+  }
+}
+
+function renderRecommendations() {
+  const el = document.getElementById('tab-recommend');
+  if (state.onBreak) {
+    el.innerHTML = `
+      <div class="break-banner fade-in">
+        <h2>☕ Break Time</h2>
+        <p>Rest up! Snack time, stroller nap, or just chill. Tap "End Break" when you're ready to go again.</p>
+        <p style="margin-top:8px;font-size:11px;">💡 Good break spots: Enchanted Tiki Room (AC!), Toontown playground, benches near Small World</p>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="toggleBreak()">End Break →</button>
+    `;
+    return;
+  }
+
+  const recs = getRecommendations();
+  let html = '<div class="section-title">What Should You Do Next?</div>';
+
+  if (state.lastRefresh) {
+    const mins = Math.round((Date.now() - new Date(state.lastRefresh).getTime()) / 60000);
+    html += `<div class="refresh-bar" style="border-radius:8px;margin-bottom:12px;">Wait times updated ${mins < 1 ? 'just now' : mins + ' min ago'} • <a href="#" onclick="refreshWaits();return false;" style="color:var(--accent);">Refresh</a></div>`;
+  }
+
+  recs.forEach((rec, i) => {
+    const {wait, open} = getWait(rec.ride.id);
+    const isTop = i === 0;
+    html += `
+      <div class="rec-card ${isTop ? 'top' : ''} fade-in" onclick="showRideModal(${rec.ride.id})" style="animation-delay:${i*0.05}s">
+        <div class="rec-number">${isTop ? '🎯 Top Pick' : `Option ${i+1}`}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="rec-ride">${rec.ride.name}</div>
+          ${waitText(rec.ride.id)}
+        </div>
+        <div class="rec-reason">${rec.reasons.slice(0, 3).join(' • ')}</div>
+        <div class="rec-meta">
+          <span>📍 ${rec.ride.land}</span>
+          <span>⏱️ ${rec.ride.duration} min ride</span>
+          ${rec.ride.hasLL ? '<span>⚡ LL</span>' : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  if (recs.length === 0) {
+    html += '<div class="card" style="text-align:center;padding:40px;">🎉 You did everything! Amazing day!</div>';
+  }
+
+  // Location selector
+  html += `
+    <div class="section-title">Where Are You?</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${Object.keys(LAND_PROXIMITY).map(land =>
+        `<button class="btn btn-small ${state.currentLand === land ? 'btn-primary' : 'btn-secondary'}"
+          onclick="setLocation('${land}')">${land}</button>`
+      ).join('')}
+    </div>
+  `;
+
+  html += '<div class="attribution">Powered by <a href="https://queue-times.com" target="_blank">Queue-Times.com</a></div>';
+  el.innerHTML = html;
+}
+
+function renderWaits() {
+  const el = document.getElementById('tab-waits');
+  let html = '<div class="section-title">Live Wait Times</div>';
+
+  // Group by land
+  const byLand = {};
+  RIDES.forEach(r => {
+    if (!byLand[r.land]) byLand[r.land] = [];
+    byLand[r.land].push(r);
+  });
+
+  for (const [land, rides] of Object.entries(byLand)) {
+    html += `<div class="section-title" style="margin-top:16px;">${land}</div><div class="card">`;
+    rides.forEach(r => {
+      const s = state.rides[r.id] || {};
+      html += `
+        <div class="ride-item" onclick="showRideModal(${r.id})">
+          <div class="ride-info">
+            <div class="ride-name ${s.done ? 'done' : ''}">${r.name}</div>
+            <div class="ride-tags">
+              ${r.tier === 1 ? '<span class="tag tag-tier1">Must-Do</span>' : ''}
+              ${r.hasLL ? '<span class="tag tag-ll">⚡ LL</span>' : ''}
+              ${r.riderSwitch ? '<span class="tag tag-rs">👶 RS</span>' : ''}
+            </div>
+          </div>
+          <div class="ride-wait">${waitText(r.id)}</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="attribution">Powered by <a href="https://queue-times.com" target="_blank">Queue-Times.com</a></div>';
+  el.innerHTML = html;
+}
+
+function renderPlan() {
+  const el = document.getElementById('tab-plan');
+  let html = '';
+
+  const tiers = [{t: 1, label: "⭐ Must-Do", cls: "tag-tier1"}, {t: 2, label: "🎢 With LLMP", cls: "tag-tier2"}, {t: 3, label: "🎠 Fill In", cls: "tag-tier3"}];
+
+  for (const tier of tiers) {
+    const rides = RIDES.filter(r => r.tier === tier.t);
+    html += `<div class="section-title">${tier.label}</div><div class="card">`;
+    rides.forEach(r => {
+      const s = state.rides[r.id] || {};
+      html += `
+        <div class="ride-item">
+          <button class="ride-check ${s.done ? 'done' : s.skipped ? 'skipped' : ''}"
+            onclick="cycleRideState(${r.id})">
+            ${s.done ? '✓' : s.skipped ? '✕' : ''}
+          </button>
+          <div class="ride-info" onclick="showRideModal(${r.id})">
+            <div class="ride-name ${s.done ? 'done' : ''}">${r.name}</div>
+            <div class="ride-detail">
+              ${r.land} • ${r.heightReq ? r.heightReq + '"' : 'Any height'}
+              ${r.notes ? ' • ' + r.notes : ''}
+            </div>
+          </div>
+          <div class="ride-wait">${waitText(r.id)}</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+
+  // Completed section
+  const done = RIDES.filter(r => state.rides[r.id]?.done);
+  if (done.length > 0) {
+    html += `<div class="section-title">✅ Completed (${done.length})</div><div class="card">`;
+    done.forEach(r => {
+      html += `
+        <div class="ride-item" style="opacity:0.5;">
+          <button class="ride-check done" onclick="cycleRideState(${r.id})">✓</button>
+          <div class="ride-info"><div class="ride-name done">${r.name}</div></div>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function renderLL() {
+  const el = document.getElementById('tab-ll');
+  let html = '';
+
+  // LL status
+  const llAvail = !state.llNextAvailable || new Date() >= new Date(state.llNextAvailable);
+  html += `
+    <div class="ll-status">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Lightning Lane Status</div>
+      <div class="ll-timer">${llAvail ? '✅ Ready to Book' : '⏳ ' + formatTimeUntil(new Date(state.llNextAvailable))}</div>
+      ${!llAvail ? `<div class="ll-label">Available at ${new Date(state.llNextAvailable).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'})}</div>` : ''}
+    </div>
+  `;
+
+  // Suggest what to book
+  if (llAvail) {
+    const suggestions = RIDES
+      .filter(r => r.hasLL && !state.llUsed.find(u => u.rideId === r.id) && !(state.rides[r.id]?.done) && !(state.rides[r.id]?.skipped))
+      .map(r => {
+        const {wait, open} = getWait(r.id);
+        return {...r, wait: open ? wait : 999};
+      })
+      .sort((a, b) => {
+        // Prioritize: tier first, then highest wait (most value from LL)
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return b.wait - a.wait;
+      });
+
+    if (suggestions.length > 0) {
+      html += '<div class="section-title">Suggested LL Booking</div>';
+      suggestions.slice(0, 3).forEach((r, i) => {
+        html += `
+          <div class="card" onclick="bookLL(${r.id})" style="cursor:pointer;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div class="card-title">${i === 0 ? '👉 ' : ''}${r.name}</div>
+                <div class="card-subtitle">${r.land} • Standby: ${r.wait} min</div>
+              </div>
+              <button class="btn btn-small btn-primary">Book ⚡</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  // Used list
+  if (state.llUsed.length > 0) {
+    html += '<div class="section-title">Used Today</div><div class="card">';
+    state.llUsed.forEach(u => {
+      html += `
+        <div class="ll-used-item">
+          <span>⚡ ${u.rideName}</span>
+          <span style="color:var(--text2);">${new Date(u.time).toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'})}</span>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+
+  // Available LL rides
+  const availableLL = RIDES.filter(r => r.hasLL && !state.llUsed.find(u => u.rideId === r.id));
+  html += `<div class="section-title">Available LL Rides (${availableLL.length})</div><div class="card">`;
+  availableLL.forEach(r => {
+    const s = state.rides[r.id] || {};
+    html += `
+      <div class="ride-item" onclick="bookLL(${r.id})">
+        <div class="ride-info">
+          <div class="ride-name ${s.done ? 'done' : ''}">${r.name}</div>
+          <div class="ride-detail">${r.land}</div>
+        </div>
+        <div class="ride-wait">${waitText(r.id)}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// ==================== ACTIONS ====================
+function cycleRideState(id) {
+  const s = state.rides[id] || {};
+  if (!s.done && !s.skipped) {
+    state.rides[id] = {done: true, skipped: false};
+  } else if (s.done) {
+    state.rides[id] = {done: false, skipped: true};
+  } else {
+    state.rides[id] = {done: false, skipped: false};
+  }
+  saveState();
+  renderAll();
+}
+
+function markCurrentDone() {
+  // Quick action — mark the top recommendation as done
+  const recs = getRecommendations();
+  if (recs.length > 0) {
+    const ride = recs[0].ride;
+    state.rides[ride.id] = {done: true, skipped: false};
+    state.currentLand = ride.land;
+    saveState();
+    renderAll();
+  }
+}
+
+function toggleBreak() {
+  state.onBreak = !state.onBreak;
+  saveState();
+  renderAll();
+}
+
+function setLocation(land) {
+  state.currentLand = land;
+  saveState();
+  renderAll();
+}
+
+function bookLL(rideId) {
+  const ride = RIDES.find(r => r.id === rideId);
+  if (!ride) return;
+
+  // Check if already used
+  if (state.llUsed.find(u => u.rideId === rideId)) {
+    alert(`Already used LL for ${ride.name} today!`);
+    return;
+  }
+
+  state.llUsed.push({rideId, rideName: ride.name, time: new Date().toISOString()});
+  // Next LL available in 2 hours or after tap-in (we'll set 2 hour timer as default)
+  state.llNextAvailable = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  state.llLastBooked = new Date().toISOString();
+  saveState();
+  renderAll();
+}
+
+function tapInLL() {
+  // Called when you actually use/tap into your LL reservation — makes next booking available immediately
+  state.llNextAvailable = null;
+  saveState();
+  renderAll();
+}
+
+function refreshWaits() {
+  fetchWaitTimes();
+}
+
+function showRideModal(rideId) {
+  const ride = RIDES.find(r => r.id === rideId);
+  if (!ride) return;
+
+  const s = state.rides[rideId] || {};
+  const {wait, open} = getWait(rideId);
+  const llUsed = state.llUsed.find(u => u.rideId === rideId);
+
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <h3>${ride.name}</h3>
+    <div style="margin-bottom:12px;">
+      ${waitText(rideId)}
+      <span style="margin-left:8px;font-size:13px;color:var(--text2);">${ride.land}</span>
+    </div>
+    <div style="font-size:14px;line-height:1.6;margin-bottom:16px;">
+      ${ride.heightReq ? `<div>📏 Height: ${ride.heightReq}" minimum ${ride.riderSwitch ? '• 👶 Rider Switch' : ''}</div>` : '<div>📏 Any height</div>'}
+      <div>⏱️ Ride duration: ~${ride.duration} min</div>
+      ${ride.hasLL ? `<div>⚡ Lightning Lane available ${llUsed ? '(Used ✓)' : ''}</div>` : ''}
+      ${ride.notes ? `<div>💡 ${ride.notes}</div>` : ''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn ${s.done ? 'btn-secondary' : 'btn-success'} btn-block"
+        onclick="cycleRideState(${rideId});closeModal();">
+        ${s.done ? '↩️ Undo Done' : '✅ Mark Done'}
+      </button>
+      ${ride.hasLL && !llUsed ? `<button class="btn btn-primary btn-block" onclick="bookLL(${rideId});closeModal();">⚡ Book Lightning Lane</button>` : ''}
+      ${!s.skipped ? `<button class="btn btn-secondary btn-block" onclick="state.rides[${rideId}]={done:false,skipped:true};saveState();renderAll();closeModal();">⏭️ Skip This Ride</button>` : ''}
+      <button class="btn btn-secondary btn-block" onclick="closeModal()">Close</button>
+    </div>
+  `;
+  document.getElementById('ride-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('ride-modal').classList.remove('active');
+}
+
+function formatTimeUntil(target) {
+  const diff = target - new Date();
+  if (diff <= 0) return "Now!";
+  const mins = Math.ceil(diff / 60000);
+  if (mins < 60) return `${mins}m`;
+  return `${Math.floor(mins/60)}h ${mins%60}m`;
+}
+
+// ==================== TABS ====================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Close modal on overlay click
+document.getElementById('ride-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ==================== INIT ====================
+loadState();
+fetchWaitTimes();
+renderAll();
+
+// Auto-refresh every 2 minutes
+setInterval(fetchWaitTimes, 120000);
+// Update clock every 30 seconds
+setInterval(updateHeader, 30000);
+</script>
+
+</body>
+</html>
